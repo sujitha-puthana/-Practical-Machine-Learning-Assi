@@ -1,0 +1,110 @@
+---
+title: "Practical Machine Learning"
+author: "Sujitha P"
+date: "December 20, 2018"
+output:
+  word_document: default
+  html_document: default
+---
+## Introduction
+
+Using devices such as Jawbone Up, Nike FuelBand, and Fitbit it is now possible to collect a large amount of data about personal activity relatively inexpensively. These type of devices are part of the quantified self movement - a group of enthusiasts who take measurements about themselves regularly to improve their health, to find patterns in their behavior, or because they are tech geeks. One thing that people regularly do is quantify how much of a particular activity they do, but they rarely quantify how well they do it. In this project, your goal will be to use data from accelerometers on the belt, forearm, arm, and dumbell of 6 participants. They were asked to perform barbell lifts correctly and incorrectly in 5 different ways. More information is available from the website here: http://web.archive.org/web/20161224072740/http:/groupware.les.inf.puc-rio.br/har (see the section on the Weight Lifting Exercise Dataset).
+
+## Source Of Data
+
+The training data for this project are available here:
+
+https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv
+
+The test data are available here:
+
+https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv
+
+The data for this project come from this source: http://groupware.les.inf.puc-rio.br/har. If you use the document you create for this class for any purpose please cite them as they have been very generous in allowing their data to be used for this kind of assignment.
+
+## Data Processing
+
+```{r, echo=TRUE}
+library(caret)
+library(rpart)
+library(rpart.plot)
+library(RColorBrewer)
+library(rattle)
+library(randomForest)
+```
+
+
+```{r, echo=TRUE}
+# Load the training dataset
+dt_training <- read.csv("pml-training.csv", na.strings=c("NA",""), strip.white=T)
+
+# Load the testing dataset
+dt_testing <- read.csv("pml-testing.csv", na.strings=c("NA",""), strip.white=T)
+```
+
+## Data Cleaning
+
+```{r, echo=TRUE}
+features <- names(dt_testing[,colSums(is.na(dt_testing)) == 0])[8:59]
+
+# Only use features used in testing cases.
+dt_training <- dt_training[,c(features,"classe")]
+dt_testing <- dt_testing[,c(features,"problem_id")]
+
+dim(dt_training) 
+dim(dt_testing)
+```
+
+## Partitioning the Dataset
+
+```{r}
+set.seed(1234567)
+
+inTrain <- createDataPartition(dt_training$classe, p=0.6, list=FALSE)
+training <- dt_training[inTrain,]
+testing <- dt_training[-inTrain,]
+
+dim(training)
+dim(testing)
+```
+
+## Decision Tree Model
+```{r}
+modFitDT <- rpart(classe ~ ., data = training, method="class")
+fancyRpartPlot(modFitDT)
+```
+
+## Predicting with the Decision Tree Model
+
+```{r}
+set.seed(1234567)
+prediction <- predict(modFitDT, testing, type = "class")
+confusionMatrix(prediction, testing$class)
+```
+
+## Building the Random Forest Model
+
+```{r}
+set.seed(12345)
+modFitRF <- randomForest(classe ~ ., data = training, ntree = 1000)
+```
+
+## Predicting on the Testing Data
+
+```{r}
+predictionDT <- predict(modFitDT, dt_testing, type = "class")
+predictionDT
+```
+
+## Random Forest Prediction
+
+```{r}
+predictionRF <- predict(modFitRF, dt_testing, type = "class")
+predictionRF
+```
+
+## Conclusion
+Accury is 99% for the test cases from the matrix of Random Forest Model.
+
+
+
